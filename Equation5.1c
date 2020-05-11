@@ -1,0 +1,17 @@
+# Equation 5.1
+p <- seq(0,1,0.01) # frequency of A
+
+h <- 0 # additive
+h = 1 #dominant
+h = -1 # recessive
+h = 5 # overdominant, pos freq dep?
+h = -2 # underdominant, neg feq dep?
+
+s=0.1
+data.frame(aa_fitness=1, 
+           Aa_fitness= (1+s*(1+h)), 
+           AA_fitness=(1+2*s))
+
+delta_p <- s*p*(1-p)*(1+h*(1-2*p))
+plot(p, delta_p)
+abline(h=0)
