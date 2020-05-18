@@ -1,0 +1,203 @@
+---
+title: "Expected Time for Allele-frequency Change"
+date: "5/12/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Libraries
+#install.packages("hexbin")
+#install.packages("plotly")
+library(plotly)
+library(reshape2)
+library(viridisLite)
+library(cowplot)
+```
+
+### Equations (page 116 - 117)
+
+**Additive (h=0)**
+$$ t_{pt,p0} \simeq \frac{1}{s}ln \left(\frac{p_{t}(1-p_{0})}{p_{0}(1-p_{t})}\right)$$
+
+**Recessive (h=-1)**
+$$ t_{pt,p0} \simeq 
+\frac{1}{2s}\left[ln \left(\frac{p_{t}(1-p_{0})}{p_{0}(1-p_{t})}\right) 
+- \frac{1}{p_{t}} + \frac{1}{p_{0}}\right]$$
+
+**Dominant (h=1)**
+$$ t_{pt,p0} \simeq 
+\frac{1}{2s}\left[ln \left(\frac{p_{t}(1-p_{0})}{p_{0}(1-p_{t})}\right) 
++ \frac{1}{1-p_{t}} - \frac{1}{1-p_{0}}\right]$$
+
+### Example 5.2 from page 117 in the book
+Simple Crow and Kimura Example for additive model
+```{r}
+h = 0 # dominance coefficient = 0 = additive
+p_0 = 0.1 # Starting frequency of favored allele 
+p_t = 0.5 # Final frequency of favored allele
+# Equation
+t_gen = (1)* log((p_t*(1-p_0))/(p_0*(1-p_t)))
+# Number of generations given selection coefficient (s)
+```
+**Number of generations to reach final allele frequency: `r round(t_gen,2)` $s^{-1}$**
+
+
+### Generalization of expected time for allele-frequency change
+
+**Generation time Function**
+```{r}
+## Function
+# This function requires three arguements:
+# p_0 : Initial allele frequency : Values 0-1
+# p_t : Final allele frequency : Values 0-1
+# fitness_type : Allele interaction : 'Additive','dominant','recessive'
+gen_time <- function(p_0=0.1,p_t=0.9,fitness_type = "additive"){
+  if(fitness_type == "additive"){
+    t_gen = (1)* log((p_t*(1-p_0))/(p_0*(1-p_t)))
+  }else{
+    if(fitness_type == "dominant"){
+      t_gen = 0.5 *(log((p_t*(1-p_0))/(p_0*(1-p_t)))+(1/(1-p_t))-(1/(1-p_0)))
+    }else{
+      if(fitness_type == "recessive"){
+        t_gen = 0.5 *(log((p_t*(1-p_0))/(p_0*(1-p_t)))-(1/p_t)+(1/p_0))
+        }else{
+          return(print("Incorrect fitness_type specified. Please use either 'additive','dominance',or 'recessive'"))
+        }
+    }
+  }
+  return(t_gen)
+}
+```
+
+### Single Examples
+
+**Recessive Allele**
+```{r}
+ # Calculating generations for recessive allele to go from frequency of 0.1
+ # to 0.7
+ rec = gen_time(p_0=0.1,p_t=0.7,fitness_type="recessive")
+ gen_time(p_0=0.1,p_t=0.5,fitness_type="recessive")
+```
+Number of generations to reach final allele frequency: `r round(rec,2)` $s^{-1}$
+
+**Dominant Allele**
+```{r}
+ # Calculating generations for dominant allele to go from frequency of 0.4
+ # to 0.8
+ dom = gen_time(p_0=0.4,p_t=0.8,fitness_type="dominant")
+```
+Number of generations to reach final allele frequency: `r round(dom,2)` $s^{-1}$
+
+### Exploring range of Starting and Ending Frequencies
+```{r}
+p_0 = seq(0.1,0.9,by=0.01) # Range of starting frequencies
+p_t = seq(0.1,0.9,by=0.01) # Range of end frequencies
+p_frequencies = expand.grid(p_0,p_t) 
+colnames(p_frequencies) = c("p_0","p_t") # Relabel data.frame
+p_frequencies = p_frequencies[p_frequencies$p_t-p_frequencies$p_0 > 0,] # Remove cases where p_t is lower than p_0
+
+# Additive
+p_frequencies$gen_add <- gen_time(p_frequencies$p_0,p_frequencies$p_t)
+# Recessive
+p_frequencies$gen_rec <- gen_time(p_frequencies$p_0,p_frequencies$p_t,
+                              fitness_type = "recessive")
+# Dominant
+p_frequencies$gen_dom <- gen_time(p_frequencies$p_0,p_frequencies$p_t,
+                                  fitness_type = "dominant")
+
+# Coverting generation estimates into data.frame matrices
+p_frequencies_add_wide <- dcast(p_frequencies, p_0 ~ p_t, value.var="gen_add")[,-1]
+p_frequencies_rec_wide <- dcast(p_frequencies, p_0 ~ p_t, value.var="gen_rec")[,-1]
+p_frequencies_dom_wide <- dcast(p_frequencies, p_0 ~ p_t, value.var="gen_dom")[,-1]
+
+# Converting data.frame objects into matrix objects
+p_frequencies_add <- data.matrix(p_frequencies_add_wide)
+p_frequencies_rec <- data.matrix(p_frequencies_rec_wide)
+p_frequencies_dom <- data.matrix(p_frequencies_dom_wide)
+```
+
+### Plotting Results  
+
+#### 3D Figures  
+```{r echo=FALSE}
+## Labels
+ax <- list(
+  title = "P_t"
+)
+ay <- list(
+  title = "P_0"
+)
+az <- list(
+  title = "Generation s-1"
+)
+
+## Additive
+fig_add <- plot_ly(y = unique(p_frequencies$p_0),
+                   x = unique(p_frequencies$p_t),
+                   z = p_frequencies_add) %>% add_surface(
+                     contours = list(
+                       z = list(
+                         show=TRUE,
+                         usecolormap=TRUE,
+                         highlightcolor="#ff0000",
+                         project=list(z=TRUE)
+                         )
+                     )
+                   ) %>% 
+  layout(title = "Additive",
+         scene = list(xaxis=ax,yaxis=ay,zaxis=az))
+fig_add
+##Recessive
+fig_rec <- plot_ly(y = unique(p_frequencies$p_0),
+                   x = unique(p_frequencies$p_t),
+                   z = p_frequencies_rec) %>% add_surface(
+                     contours = list(
+                       z = list(
+                         show=TRUE,
+                         usecolormap=TRUE,
+                         highlightcolor="#ff0000",
+                         project=list(z=TRUE)
+                         )
+                     )
+                   ) %>% 
+  layout(title = "Recessive",
+         scene = list(xaxis=ax,yaxis=ay,zaxis=az))
+fig_rec
+## Dominant
+fig_dom <- plot_ly(y = unique(p_frequencies$p_0),
+                   x = unique(p_frequencies$p_t),
+                   z = p_frequencies_dom) %>% add_surface(
+                     contours = list(
+                       z = list(
+                         show=TRUE,
+                         usecolormap=TRUE,
+                         highlightcolor="#ff0000",
+                         project=list(z=TRUE)
+                         )
+                     )
+                   ) %>% 
+  layout(title = "Dominant",
+         scene = list(xaxis=ax,yaxis=ay,zaxis=az))
+fig_dom
+```
+
+#### 2D Heatmaps  
+```{r echo=FALSE,fig.width=11,fig.height=20}
+
+pA <- ggplot(p_frequencies,aes(p_0,p_t, fill= gen_add)) + 
+  geom_tile() + labs(title="Additive",fill="Gen Time (s-1)") +
+  scale_fill_viridis_c(option="plasma",limit=c(0,6.5)) +
+  theme_cowplot()
+pR <- ggplot(p_frequencies,aes(p_0,p_t, fill= gen_rec)) + 
+  geom_tile() + labs(title="Recessive",fill="Gen Time (s-1)") +
+  scale_fill_viridis_c(option="plasma",limit=c(0,6.5)) + 
+  theme_cowplot()
+pD <- ggplot(p_frequencies,aes(p_0,p_t, fill= gen_dom)) + 
+  geom_tile() + labs(title="Dominant",fill="Gen Time (s-1)") +
+  scale_fill_viridis_c(option="plasma",limit=c(0,6.5)) + 
+  theme_cowplot()
+plot_grid(pA,pR,pD,ncol=1)
+```
