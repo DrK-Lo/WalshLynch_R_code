@@ -17,10 +17,10 @@ if (!("transformr" %in% installed.packages())){devtools::install_github("thomasp
 require(transformr)
 
 
-a_i = 1 # allele effect size
+a_i = 0.1 # allele effect size
 s = 0.1 # selection coefficient
 mu = 0 # mean phenotype
-theta = seq(-1,1,0.1) # phenotypic value
+theta = seq(-1,1,0.1) # phenotypic value optimum
 p_i=seq(0,1,0.1) # allele frequency
 
 p = tibble(a_i=a_i,p_i=seq(0,1,0.1)) # create allele frequency tibble object to merge
@@ -54,7 +54,7 @@ ggplot(aes(x=p_i, y=d_p_i),data=dat)+
   xlab(expression(paste(italic(p)[i],": allele frequency")))+
   theme_classic()+
   transition_time(theta)+
-  labs(title = paste("Phenotype = {frame_time}, Optimal phenotype = ",mu)) +
+  labs(title = paste("Optimal phenotype = {frame_time}, Mean phenotype = ",mu)) +
   view_follow()
 
 
@@ -63,7 +63,7 @@ ggplot()+
   geom_point(aes(x=p_i, y=d_p_i(a_i,s,mu,theta=mu, p_i)), size=3)+
   geom_line(aes(x=p_i, y=d_p_i(a_i,s,mu,theta=mu, p_i)))+
   geom_hline(yintercept=0, col="red")+
-  ggtitle(paste("Phenotype = ",mu,",Optimal phenotype = ",mu))+
+  ggtitle(paste("Optimal phenotype = ",mu,", mean phenotype = ",mu))+
   ylab(expression(paste(Delta, italic(p),": rate of change in allele frequency")))+
   xlab(expression(paste(italic(p)[i],": allele frequency")))+
   theme_classic()
@@ -74,7 +74,7 @@ ggplot(aes(x=p_i, y=d_p_i_2),data=dat)+
   geom_point(size=3)+
   geom_line()+
   geom_hline(yintercept=0, col="red")+
-  ggtitle(paste("Phenotype = ",mu,",Optimal phenotype = ",mu))+
+  ggtitle(paste("Optimal phenotype = ",mu,", mean phenotype = ",mu))+
   ylab(expression(paste(Delta, italic(p),": rate of change in allele frequency")))+
   xlab(expression(paste(italic(p)[i],": allele frequency")))+
   theme_classic()
@@ -88,9 +88,9 @@ for (i in theta){
   print(ggplot()+
           geom_point(aes(x=p_i, y=d_p_i(a_i,s,mu,i, p_i)), size=3)+
           geom_line(aes(x=p_i, y=d_p_i(a_i,s,mu,i, p_i)))+
-          ylim(-0.03,0.03)+
+          #ylim(-0.03,0.03)+
           geom_hline(yintercept=0, col="red")+
-          ggtitle(paste("Phenotype = ",i,", Optimal = ",mu))+
+          ggtitle(paste("Optimal phenotype = ",i,", mean phenotype = ",mu))+
           ylab(expression(paste(Delta, italic(p),": rate of change in allele frequency")))+
           xlab(expression(paste(italic(p)[i],": allele frequency")))+
           theme_classic()
