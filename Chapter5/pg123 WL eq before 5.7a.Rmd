@@ -11,40 +11,55 @@ library(gtools)
 ```
 
 ```{r}
-n_alleles = 3
-p = rep(1/n_alleles, n_alleles)
-p = c(0.9, 0.05, 0.05)
+n_alleles = 3 # the number of alleles
+p = rep(1/n_alleles, n_alleles) #e.g., set all allele frequencies to be equal
+p = c(0.9, 0.05, 0.05) # e.g., set one allele to be at high frequency
 
-(n_genotypes = (n_alleles)*(n_alleles+1)/2)
-(het_genotypes = combinations(n_alleles, 2, 1:n_alleles))
-(hom_genotypes = matrix(1:n_alleles, ncol=2, nrow=n_alleles))
-genotypes = rbind(het_genotypes, hom_genotypes)
+
+(n_genotypes = (n_alleles)*(n_alleles+1)/2) # total number of genotypes
+
+(het_genotypes = combinations(n_alleles, 2, 1:n_alleles)) # heterozygote genotypes
+
+(hom_genotypes = matrix(1:n_alleles, ncol=2, nrow=n_alleles)) # homozygote genotypes
+
+genotypes = rbind(het_genotypes, hom_genotypes) # list of all genotypes
 (genotypes = data.frame(genotypes))
-genotypes$W= rnorm(nrow(genotypes), mean=1, sd=0.05)
+
+# create fitnesses for each genotype by drawing from a normal distribution
+# could modify to put in specific fitnesses
+genotypes$W= rnorm(nrow(genotypes), mean=1, sd=0.05) 
+
 genotypes
 
- k=0
+## This implements the equation that is before 5.7a in the book
 for(i in 1:n_alleles){
   for(j in 1:n_alleles){
-    k=k+1
-    if(i!=j & j<i){
+    # this loop works because each heterozygote genotype should be counted
+    # twice in the fitness calculation (2pq)
+  
+    if(i!=j & j<i){ # just code to find the heterozygote genotypes
       a=j
       b=i
     }else{
         a=i
         b=j
     }
+    
+    ## create a table for output
     if (i==1 & j==1){
        W= genotypes$W[which(genotypes$X1==a &genotypes$X2==b)]
-    fitness_tab= data.frame(i=i, j=j, W=W, pi=p[i],pj=p[j],  fitness_contr=p[i]*p[j]*W)
+       fitness_tab= data.frame(i=i, j=j, W=W, pi=p[i],pj=p[j],  
+                    genotype=paste0(a,b), fitness_contr=p[i]*p[j]*W)
     }else{
       W= genotypes$W[which(genotypes$X1==a &genotypes$X2==b)]
-    fitness1= data.frame(i=i, j=j, W=W, pi=p[i],pj=p[j],  fitness_contr=p[i]*p[j]*W)
-    fitness_tab <- rbind(fitness_tab, fitness1)
+      fitness1= data.frame(i=i, j=j, W=W, pi=p[i],pj=p[j],  
+                    genotype=paste0(a,b),   fitness_contr=p[i]*p[j]*W)
+      fitness_tab <- rbind(fitness_tab, fitness1)
     }
+    
   }
 }
-fitness_tab
+fitness_tab #contributions to fitness. Note how each heterozygote is counted twice
 
-(mean_fitness=sum(fitness_tab$fitness_contr))
+(mean_fitness=sum(fitness_tab$fitness_contr)) # final calculation
 ```
