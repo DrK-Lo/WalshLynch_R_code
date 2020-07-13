@@ -1,15 +1,16 @@
  
 #### Excercise 5.7 (page 12X) ####
-# Calculating the marginal effects (W_AA) of individuals 
+# Calculating the marginal effects (W_AA) of 
 # homozygous A (AA) individuals, while considering the 
 # impact of gametic-phase disequilibrium (i.e. linkage disequilibrium)
 
 ## Before we get started a quick refresher
- # on conditional probabilities
-# Pr(AABB|AA)
+# on conditional probabilities.
+
+# Consider Pr(AABB|AA) - 
 # This is equivalent to the probability of the two-locus
 # genotype AABB given the probability of AA.
-# This can also be obtained with the formal Pr(AABB,BB)/Pr(BB)
+# This can also be obtained with the formula Pr(AABB,BB)/Pr(BB)
 # Which reads as the probability of AABB AND BB divided by the 
 # probability of BB.
 
